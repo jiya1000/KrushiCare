@@ -11,7 +11,7 @@ auth_bp = Blueprint("auth", __name__)
 # --- CONFIGURATION (Inhe Flask config mein bhi daal sakte hain) ---
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 SENDER_EMAIL = "factzit444@gmail.com"
-BASE_URL = "http://127.0.0.1:5000" # Localhost ke liye
+BASE_URL = "https://web-production-29bb2.up.railway.app" # Localhost ke liye
 
 # Brevo SDK Setup
 configuration = sib_api_v3_sdk.Configuration()
