@@ -103,7 +103,7 @@ def predict_disease(current_user):
         pred         = disease_model.predict(arr)
         confidence   = float(np.max(pred))
         class_id     = int(np.argmax(pred))
-        disease_name = class_names[class_id]
+        disease_name = class_names[str(class_id)]
     except Exception as e:
         return jsonify({
             "success": False,
