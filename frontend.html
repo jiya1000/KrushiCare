@@ -1071,107 +1071,58 @@ function handleLeafUpload(e) {
   preview.classList.add('visible');
 }
 
-function runLeafDetection() {
+async function runLeafDetection() {
   const area = document.getElementById('leaf-result-area');
-  area.innerHTML = '<div class="loading-anim"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div><p style="text-align:center;color:var(--text-muted);font-size:0.85rem;">Analysing leaf image with CNN model...</p>';
-  setTimeout(() => {
-    area.innerHTML = `
-      <div class="result-card success-card">
-        <div class="result-tag tag-warning">⚠️ Disease Detected · Confidence 91.4%</div>
-        <div class="result-title">Early Blight (Alternaria solani)</div>
-        <div class="result-body">The leaf shows dark brown concentric ring lesions typical of Early Blight caused by the fungal pathogen <em>Alternaria solani</em>. Affected tissue shows necrosis with a yellow halo border.</div>
-      </div>
-      <div class="result-card">
-        <div class="result-tag tag-info">📊 Model Confidence</div>
-        <div style="margin-top:0.5rem;">
-          <div class="confidence-row"><span class="confidence-label">Early Blight</span><div class="confidence-bar-wrap"><div class="confidence-bar-fill" style="width:91%"></div></div><span class="confidence-pct">91%</span></div>
-          <div class="confidence-row"><span class="confidence-label">Late Blight</span><div class="confidence-bar-wrap"><div class="confidence-bar-fill" style="width:6%;background:var(--amber-400)"></div></div><span class="confidence-pct">6%</span></div>
-          <div class="confidence-row"><span class="confidence-label">Healthy</span><div class="confidence-bar-wrap"><div class="confidence-bar-fill" style="width:3%;background:var(--teal-400)"></div></div><span class="confidence-pct">3%</span></div>
-        </div>
-      </div>
-      <div class="result-card">
-        <div class="result-tag tag-success">✅ Treatment Plan</div>
-        <ul class="result-steps">
-          <li><div class="step-num">1</div>Remove and destroy all infected leaves immediately to prevent spread.</li>
-          <li><div class="step-num">2</div>Apply <strong>Mancozeb 75% WP</strong> (2.5 g/L water) spray every 7–10 days.</li>
-          <li><div class="step-num">3</div>Ensure good air circulation between plants; avoid overhead irrigation.</li>
-          <li><div class="step-num">4</div>Apply copper-based fungicide as a preventive measure in surrounding plants.</li>
-          <li><div class="step-num">5</div>Monitor crop weekly; repeat treatment if symptoms persist after 2 sprays.</li>
-        </ul>
-      </div>
-    `;
-  }, 2200);
+  const fileInput = document.getElementById('leaf-file-input');
+  const cropType = document.getElementById('leaf-crop-type').value;
+  if (!fileInput.files[0]) { alert('Pehle image upload karo!'); return; }
+  area.innerHTML = '<div class="loading-anim"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+  const token = localStorage.getItem('token');
+  const formData = new FormData();
+  formData.append('image', fileInput.files[0]);
+  formData.append('crop_type', cropType);
+  try {
+    const res = await fetch('http://localhost:5000/api/predict-disease', { method:'POST', headers:{'Authorization':'Bearer '+token}, body:formData });
+    const data = await res.json();
+    area.innerHTML = `<div class="result-card success-card"><div class="result-tag ${data.disease?.toLowerCase().includes('healthy') ? 'tag-success' : 'tag-warning'}">${data.disease?.toLowerCase().includes('healthy') ? '✅ Healthy' : '⚠️ Disease Detected'} · Confidence ${data.confidence}%</div><div class="result-title">${data.disease}</div></div>`;
+  } catch(e) { area.innerHTML = '<p>Error: Server se connect nahi ho paya!</p>'; }
 }
 
-// ===== CROP RECOMMENDATION =====
-function runCropRecommendation() {
+async function runCropRecommendation() {
   const area = document.getElementById('crop-result-area');
-  area.innerHTML = '<div class="loading-anim"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div><p style="text-align:center;color:var(--text-muted);font-size:0.85rem;">Analysing field image + soil parameters with Random Forest model...</p>';
-  setTimeout(() => {
-    area.innerHTML = `
-      <div class="result-card success-card">
-        <div class="result-tag tag-success">🌾 Top Recommendation</div>
-        <div class="result-title">Wheat (Triticum aestivum)</div>
-        <div class="result-body">Wheat is highly suitable for your soil conditions. The pH level of 6.8 and potassium levels are optimal for good grain development. Moderate nitrogen availability suits wheat's growth pattern.</div>
-      </div>
-      <div class="result-card">
-        <div class="result-tag tag-info">📊 Suitability Scores</div>
-        <div style="margin-top:0.5rem;">
-          <div class="confidence-row"><span class="confidence-label">Wheat</span><div class="confidence-bar-wrap"><div class="confidence-bar-fill" style="width:88%"></div></div><span class="confidence-pct">88%</span></div>
-          <div class="confidence-row"><span class="confidence-label">Chickpea</span><div class="confidence-bar-wrap"><div class="confidence-bar-fill" style="width:79%"></div></div><span class="confidence-pct">79%</span></div>
-          <div class="confidence-row"><span class="confidence-label">Mustard</span><div class="confidence-bar-wrap"><div class="confidence-bar-fill" style="width:72%"></div></div><span class="confidence-pct">72%</span></div>
-          <div class="confidence-row"><span class="confidence-label">Soybean</span><div class="confidence-bar-wrap"><div class="confidence-bar-fill" style="width:61%;background:var(--amber-400)"></div></div><span class="confidence-pct">61%</span></div>
-          <div class="confidence-row"><span class="confidence-label">Rice</span><div class="confidence-bar-wrap"><div class="confidence-bar-fill" style="width:38%;background:var(--amber-200)"></div></div><span class="confidence-pct">38%</span></div>
-        </div>
-      </div>
-      <div class="result-card">
-        <div class="result-tag tag-info">💡 Agronomic Tips</div>
-        <ul class="result-steps">
-          <li><div class="step-num">1</div>Sow between <strong>October 15 – November 15</strong> for optimal Rabi season yield.</li>
-          <li><div class="step-num">2</div>Apply 120 kg N/ha in split doses: 50% at sowing + 50% at first irrigation.</li>
-          <li><div class="step-num">3</div>Ensure irrigation at crown root initiation (CRI), jointing, and grain filling stages.</li>
-          <li><div class="step-num">4</div>Recommended variety for your region: <strong>GW 322</strong> or <strong>HI 8498</strong>.</li>
-        </ul>
-      </div>
-    `;
-  }, 2000);
+  area.innerHTML = '<div class="loading-anim"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+  const token = localStorage.getItem('token');
+  const formData = new FormData();
+  formData.append('N', document.getElementById('n-range').value);
+  formData.append('P', document.getElementById('p-range').value);
+  formData.append('K', document.getElementById('k-range').value);
+  formData.append('pH', (document.getElementById('ph-range').value/10).toFixed(1));
+  formData.append('temperature', document.getElementById('temp-range').value);
+  formData.append('humidity', document.getElementById('hum-range').value);
+  formData.append('rainfall', document.getElementById('rain-range').value);
+  try {
+    const res = await fetch('http://localhost:5000/api/recommend-crop', { method:'POST', headers:{'Authorization':'Bearer '+token}, body:formData });
+    const data = await res.json();
+    area.innerHTML = `<div class="result-card success-card"><div class="result-tag tag-success">🌾 Top Recommendation</div><div class="result-title">${data.top_crop}</div><div class="result-body">Suitability Score: ${data.suitability_score}%</div></div><div class="result-card"><div class="result-tag tag-info">📊 Alternatives</div>${data.alternatives.map(a=>`<div class="confidence-row"><span class="confidence-label">${a.crop}</span><div class="confidence-bar-wrap"><div class="confidence-bar-fill" style="width:${a.score}%"></div></div><span class="confidence-pct">${a.score}%</span></div>`).join('')}</div>`;
+  } catch(e) { area.innerHTML = '<p>Error!</p>'; }
 }
 
-// ===== ROTATION PLAN =====
-function runRotationPlan() {
+async function runRotationPlan() {
   const area = document.getElementById('rotation-result-area');
-  const current = document.getElementById('rot-current').value;
-  area.innerHTML = '<div class="loading-anim"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div><p style="text-align:center;color:var(--text-muted);font-size:0.85rem;">Analysing crop image + field data to generate rotation plan...</p>';
-  setTimeout(() => {
-    area.innerHTML = `
-      <div class="result-card success-card">
-        <div class="result-tag tag-success">🔄 Optimal Rotation Plan</div>
-        <div class="result-title">3-Season Rotation Strategy</div>
-        <div class="result-body">Based on your current crop and soil type, this rotation sequence maximizes soil nitrogen replenishment, reduces fungal disease build-up, and maintains yield stability.</div>
-        <div class="rotation-chain" style="margin-top:1rem;">
-          <div class="rotation-crop">Season 1<br><strong>${current}</strong></div>
-          <span class="rotation-arrow">→</span>
-          <div class="rotation-crop">Season 2<br><strong>Green Gram</strong></div>
-          <span class="rotation-arrow">→</span>
-          <div class="rotation-crop">Season 3<br><strong>Maize</strong></div>
-        </div>
-      </div>
-      <div class="result-card">
-        <div class="result-tag tag-info">📅 Season-wise Details</div>
-        <ul class="result-steps">
-          <li><div class="step-num">1</div><div><strong>Season 1 — ${current}</strong><br>Primary cash crop. Harvest residue should be incorporated into soil to add organic matter.</div></li>
-          <li><div class="step-num">2</div><div><strong>Season 2 — Green Gram (Moong)</strong><br>Legume crop fixes atmospheric nitrogen (~80 kg N/ha). Improves soil porosity and microbiome health.</div></li>
-          <li><div class="step-num">3</div><div><strong>Season 3 — Maize</strong><br>Deep-rooted crop that breaks hardpan layer. Benefits from nitrogen fixed by previous legume crop. High yield potential.</div></li>
-        </ul>
-      </div>
-      <div class="result-card warning-card">
-        <div class="result-tag tag-warning">⚗️ Nutrient Management</div>
-        <div class="result-body">Expected soil nitrogen improvement: <strong>+35–45 kg/ha</strong> after legume phase. Reduce fertiliser input in Season 3 by approximately 30% compared to baseline. Apply zinc sulphate (25 kg/ha) before sowing Maize.</div>
-      </div>
-    `;
-  }, 2000);
+  area.innerHTML = '<div class="loading-anim"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>';
+  const token = localStorage.getItem('token');
+  const formData = new FormData();
+  formData.append('current_crop', document.getElementById('rot-current').value);
+  formData.append('soil_type', document.getElementById('rot-soil').value);
+  formData.append('seasons', document.getElementById('rot-seasons').value);
+  formData.append('goal', document.getElementById('rot-goal').value);
+  formData.append('area', document.getElementById('rot-area-val').textContent.replace(' acres',''));
+  try {
+    const res = await fetch('http://localhost:5000/api/rotation-plan', { method:'POST', headers:{'Authorization':'Bearer '+token}, body:formData });
+    const data = await res.json();
+    area.innerHTML = `<div class="result-card success-card"><div class="result-tag tag-success">🔄 ${data.strategy}</div><div class="result-body">${data.summary}</div><div class="rotation-chain" style="margin-top:1rem;">${data.rotation.map(r=>`<div class="rotation-crop">Season ${r.season}<br><strong>${r.crop}</strong></div>`).join('<span class="rotation-arrow">→</span>')}</div></div>`;
+  } catch(e) { area.innerHTML = '<p>Error!</p>'; }
 }
-
 // ===== LAND ANALYSIS =====
 function selectSoil(el, type) {
   document.querySelectorAll('.soil-option').forEach(s => s.classList.remove('selected'));
